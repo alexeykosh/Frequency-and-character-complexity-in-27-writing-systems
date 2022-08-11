@@ -16,11 +16,10 @@ library(broom.mixed)
 library(sf)
 library(viridis)
 
-# # Setting the working directory to current location
-# setwd(getSrcDirectory()[1])
 
 # Setting the theme for ggplot
 theme_set(theme_bw())
+
 
 # Data loading
 data <- read.csv('data/final.csv')
@@ -28,12 +27,12 @@ data <- data[data$ISO_language != 'heb',]
 ## Log-transforming relative frequency
 data$Relative_frequency_l <- log(data$Relative_frequency)
 
+
 # Figure 1
 dist <- data %>%
   distinct(ISO_script, .keep_all = TRUE) %>%
   mutate(Family = stringr::str_replace(Family, 'Mainland SE Asia',
                                        'Mainland Southeast Asia'))
-
 ## Setting coordinates that could not be retrieved using lingtypology
 dist$Language <- lang.iso(dist$ISO_language)
 dist$lat <- lat.lang(dist$Language)
@@ -229,6 +228,7 @@ ggsave('figures/fig2.pdf',
        width = 16,
        height = 8,
        device = cairo_pdf)
+
 
 # Figure 3
 ## Function to plot individual predictions for perimetric complexity
