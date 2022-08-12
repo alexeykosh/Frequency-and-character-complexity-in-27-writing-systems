@@ -8,6 +8,10 @@ Authors:
 - Helena Miton
 - Olivier Morin 
 
+## Supplemetary materials
+
+A web-page containing all of the supplemetary materials for this paper can be found [here](https://alexeykosh.github.io/Frequency-and-character-complexity-in-27-writing-systems/supplement).
+
 ## Reproduction 
 
 - [data](https://github.com/alexeykosh/Frequency-and-character-complexity-in-27-writing-systems/tree/main/data) contains the dataset with 1560 characters from 27 writing systems used in this analysis.
