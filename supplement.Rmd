@@ -163,7 +163,8 @@ p2 <- ggplot(data.frame(pearson=residuals(model_full_p,type="pearson")), aes(x=p
         axis.ticks.y=element_blank())+
   xlim(-50, 50)+
   coord_flip()+
-  ylab('Density')
+  ylab('Density')+
+  geom_vline(xintercept=0,linetype="dashed")
 
 ggarrange(p1, p2, widths = c(1, 0.5), ncol = 2, nrow = 1)
 ```
@@ -216,7 +217,8 @@ p2 <- ggplot(data.frame(pearson=residuals(model_full_c,type="pearson")), aes(x=p
         axis.ticks.y=element_blank())+
   xlim(-700, 700)+
   coord_flip()+
-  ylab('Density')
+  ylab('Density')+
+  geom_vline(xintercept=0,linetype="dashed")
 
 ggarrange(p1, p2, widths = c(1, 0.5), ncol = 2, nrow = 1)
 ```
