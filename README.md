@@ -8,6 +8,10 @@ Authors:
 - Helena Miton
 - Olivier Morin 
 
+## Pre-registration
+
+This study was pregeistered on the Open Sciense Framework. The pre-registration document is stored [here](https://osf.io/h8mqk/).
+
 ## Supplemetary materials
 
 A web-page containing all of the supplemetary materials for this paper can be found [here](https://alexeykosh.github.io/Frequency-and-character-complexity-in-27-writing-systems/supplement).
