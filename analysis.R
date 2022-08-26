@@ -26,6 +26,10 @@ data <- read.csv('data/final.csv')
 data <- data[data$ISO_language != 'heb',]
 ## Log-transforming relative frequency
 data$Relative_frequency_l <- log(data$Relative_frequency)
+## Correlation test
+cor.test(data$Perimetric_complexity, 
+         data$Compression, 
+         method = "pearson")
 
 
 # Figure 1
@@ -279,7 +283,7 @@ p_2_ <- predicted_values_p %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Perimetric_complexity, 
-                 color=ISO_script), alpha=0.4)+
+                 color=Family), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
@@ -306,7 +310,7 @@ p_2_c <- predicted_values_c %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Compression, 
-                 color=ISO_script), alpha=0.4)+
+                 color=Family), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
