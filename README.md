@@ -1,5 +1,7 @@
 # Frequency and character complexity in 27 writing systems
 
+[![DOI](https://zenodo.org/badge/523754010.svg)](https://zenodo.org/badge/latestdoi/523754010)
+
 ## Online supplement 
 
 Authors: 
