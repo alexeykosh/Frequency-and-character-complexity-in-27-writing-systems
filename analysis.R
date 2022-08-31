@@ -31,34 +31,44 @@ cor.test(data$Perimetric_complexity,
          data$Compression, 
          method = "pearson")
 
-
-# Figure 1
-dist <- data %>%
+## SI table
+data %>%
+  group_by(ISO_script) %>% 
+  summarise(LengthScript = n(), across()) %>%
   distinct(ISO_script, .keep_all = TRUE) %>%
   mutate(Family = stringr::str_replace(Family, 'Mainland SE Asia',
-                                       'Mainland Southeast Asia'))
-## Setting coordinates that could not be retrieved using lingtypology
-dist$Language <- lang.iso(dist$ISO_language)
-dist$lat <- lat.lang(dist$Language)
-dist$lon <- long.lang(dist$Language)
-dist[dist$ISO_language == 'chr',]$lat <- 35.8513
-dist[dist$ISO_language == 'chr',]$lon <- -94.9878
-dist[dist$ISO_language == 'cre',]$lat <- 66.578227
-dist[dist$ISO_language == 'cre',]$lon <- -93.270105
+                                        'Mainland Southeast Asia')) %>%
+  arrange(ISO_language) %>%
+  select(ISO_language, ISO_script, Family, Sum_count, LengthScript, Source) %>%
+  write.csv(.,file = 'data/script_table.csv')
 
-dist %>%
-  ggplot(aes(x=lon, y=lat))+
-    coord_sf(xlim = c(-100, 120),ylim = c(0, 75), expand = TRUE)+
-    borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", .2))+
-    geom_point(aes(color=Family))+
-    geom_text_repel(aes(label=ISO_script))+
-    theme_void()+
-    theme(legend.position = 'bottom')+
-    scale_color_viridis(discrete=TRUE)+
-    theme(text = element_text(size = 10)) 
-
-ggsave('figures/fig1.pdf', dpi=300, width = 8, height = 6)
-knitr::plot_crop('figures/fig1.pdf')
+# # Figure 1
+# dist <- data %>%
+#   distinct(ISO_script, .keep_all = TRUE) %>%
+#   mutate(Family = stringr::str_replace(Family, 'Mainland SE Asia',
+#                                        'Mainland Southeast Asia'))
+# ## Setting coordinates that could not be retrieved using lingtypology
+# dist$Language <- lang.iso(dist$ISO_language)
+# dist$lat <- lat.lang(dist$Language)
+# dist$lon <- long.lang(dist$Language)
+# dist[dist$ISO_language == 'chr',]$lat <- 35.8513
+# dist[dist$ISO_language == 'chr',]$lon <- -94.9878
+# dist[dist$ISO_language == 'cre',]$lat <- 66.578227
+# dist[dist$ISO_language == 'cre',]$lon <- -93.270105
+# 
+# dist %>%
+#   ggplot(aes(x=lon, y=lat))+
+#     coord_sf(xlim = c(-100, 120),ylim = c(0, 75), expand = TRUE)+
+#     borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", .2))+
+#     geom_point(aes(color=Family))+
+#     geom_text_repel(aes(label=ISO_script))+
+#     theme_void()+
+#     theme(legend.position = 'bottom')+
+#     scale_color_viridis(discrete=TRUE)+
+#     theme(text = element_text(size = 10)) 
+# 
+# ggsave('figures/fig1.pdf', dpi=300, width = 8, height = 6)
+# knitr::plot_crop('figures/fig1.pdf')
 
 
 # Mixed-effects linear regression
@@ -283,7 +293,7 @@ p_2_ <- predicted_values_p %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Perimetric_complexity, 
-                 color=Family), alpha=0.7)+
+                 color=ISO_script), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
@@ -310,7 +320,7 @@ p_2_c <- predicted_values_c %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Compression, 
-                 color=Family), alpha=0.7)+
+                 color=ISO_script), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
