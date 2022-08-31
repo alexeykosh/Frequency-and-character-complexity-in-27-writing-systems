@@ -18,7 +18,7 @@ A web-page containing all of the supplemetary materials for this paper can be fo
 
 ## Reproduction 
 
-- [data](https://github.com/alexeykosh/Frequency-and-character-complexity-in-27-writing-systems/tree/main/data) contains the dataset with 1560 characters from 27 writing systems used in this analysis.
+- [data](https://github.com/alexeykosh/Frequency-and-character-complexity-in-27-writing-systems/tree/main/data) contains the dataset with 1560 characters from 27 writing systems used in this analysis together with dataset with the information about each of the writing systems used.
 
 - [preprocessing](https://github.com/alexeykosh/Frequency-and-character-complexity-in-27-writing-systems/tree/main/preprocessing) contains files needed to build the final dataset. 
 
