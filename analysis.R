@@ -15,6 +15,12 @@ library(sysfonts)
 library(broom.mixed)
 library(sf)
 library(viridis)
+# library(broom)
+# library(tidyr)
+# library(purrr)
+# library(tibble)
+# library(simpleboot)
+library(ggridges)
 
 
 # Setting the theme for ggplot
@@ -42,33 +48,33 @@ data %>%
   select(ISO_language, ISO_script, Family, Sum_count, LengthScript, Source) %>%
   write.csv(.,file = 'data/script_table.csv')
 
-# # Figure 1
-# dist <- data %>%
-#   distinct(ISO_script, .keep_all = TRUE) %>%
-#   mutate(Family = stringr::str_replace(Family, 'Mainland SE Asia',
-#                                        'Mainland Southeast Asia'))
-# ## Setting coordinates that could not be retrieved using lingtypology
-# dist$Language <- lang.iso(dist$ISO_language)
-# dist$lat <- lat.lang(dist$Language)
-# dist$lon <- long.lang(dist$Language)
-# dist[dist$ISO_language == 'chr',]$lat <- 35.8513
-# dist[dist$ISO_language == 'chr',]$lon <- -94.9878
-# dist[dist$ISO_language == 'cre',]$lat <- 66.578227
-# dist[dist$ISO_language == 'cre',]$lon <- -93.270105
-# 
-# dist %>%
-#   ggplot(aes(x=lon, y=lat))+
-#     coord_sf(xlim = c(-100, 120),ylim = c(0, 75), expand = TRUE)+
-#     borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", .2))+
-#     geom_point(aes(color=Family))+
-#     geom_text_repel(aes(label=ISO_script))+
-#     theme_void()+
-#     theme(legend.position = 'bottom')+
-#     scale_color_viridis(discrete=TRUE)+
-#     theme(text = element_text(size = 10)) 
-# 
-# ggsave('figures/fig1.pdf', dpi=300, width = 8, height = 6)
-# knitr::plot_crop('figures/fig1.pdf')
+# Figure 1
+dist <- data %>%
+  distinct(ISO_script, .keep_all = TRUE) %>%
+  mutate(Family = stringr::str_replace(Family, 'Mainland SE Asia',
+                                       'Mainland Southeast Asia'))
+## Setting coordinates that could not be retrieved using lingtypology
+dist$Language <- lang.iso(dist$ISO_language)
+dist$lat <- lat.lang(dist$Language)
+dist$lon <- long.lang(dist$Language)
+dist[dist$ISO_language == 'chr',]$lat <- 35.8513
+dist[dist$ISO_language == 'chr',]$lon <- -94.9878
+dist[dist$ISO_language == 'cre',]$lat <- 66.578227
+dist[dist$ISO_language == 'cre',]$lon <- -93.270105
+
+dist %>%
+  ggplot(aes(x=lon, y=lat))+
+    coord_sf(xlim = c(-100, 120),ylim = c(0, 75), expand = TRUE)+
+    borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", .2))+
+    geom_point(aes(color=Family))+
+    geom_text_repel(aes(label=ISO_script))+
+    theme_void()+
+    theme(legend.position = 'bottom')+
+    scale_color_viridis(discrete=TRUE)+
+    theme(text = element_text(size = 10))
+
+ggsave('figures/fig1.pdf', dpi=300, width = 8, height = 6)
+knitr::plot_crop('figures/fig1.pdf')
 
 
 # Mixed-effects linear regression
@@ -134,6 +140,51 @@ confint(model_full_p_f)
 ## Confidencce intervals
 summary(model_full_p)
 
+## Individual regression for each script: algorithmic complexity 
+data %>%
+  nest(data = -ISO_script) %>% 
+  mutate(
+    fit = map(data, ~ lm(Compression ~ Relative_frequency_l, data = .x)),
+    tidied = map(fit, ~broom::tidy(.x, conf.int = TRUE, conf.level = 0.95))
+  ) %>% 
+  unnest(tidied) %>%
+  filter(term == "Relative_frequency_l") %>%
+  mutate(ISO_script = forcats::fct_reorder(ISO_script, desc(estimate))) %>%
+  ggplot(aes(x=estimate, y=ISO_script))+
+  geom_vline(xintercept = 0, 
+             linetype="dashed", 
+             color = "red", 
+             size=1)+
+  geom_point()+
+  geom_pointrange(aes(xmin=conf.low, xmax=conf.high))+
+  xlim(-125, 40)
+
+## Individual regression for each script: perimetric complexity 
+# read.csv('data/betas_p.csv') %>%
+#   mutate(ISO_code = forcats::fct_reorder(ISO_code, desc(beta))) %>%
+#   ggplot(aes(x = beta, y = ISO_code))+ 
+#   geom_density_ridges(rel_min_height = 0.005, 
+#                       quantile_lines = TRUE,
+#                       quantiles = 2)+
+#   geom_vline(xintercept = 0,
+#              linetype="dashed",
+#              color = "red",
+#              size=0.5)+
+#   xlab('β for relative frequency')+
+#   ylab('')
+# 
+# read.csv('data/betas_c.csv') %>%
+#   mutate(ISO_code = forcats::fct_reorder(ISO_code, desc(beta))) %>%
+#   ggplot(aes(x = beta, y = ISO_code))+ 
+#   geom_density_ridges(rel_min_height = 0.005, 
+#                       quantile_lines = TRUE,
+#                       quantiles = 2)+
+#   geom_vline(xintercept = 0,
+#              linetype="dashed",
+#              color = "red",
+#              size=0.5)+
+#   xlab('β for relative frequency')+
+#   ylab('')
 
 # Figure 2
 ## Extracting model confidence interval (perimetric complexity)
@@ -249,9 +300,9 @@ ggsave('figures/fig2.pdf',
 plot_individ_pred_p <- function(script){
   data %>%
     filter(ISO_script == script) %>%
-    ggplot(aes(x=Relative_frequency_l, y=Perimetric_complexity))+
+    ggplot(aes(x=exp(Relative_frequency_l), y=Perimetric_complexity))+
     geom_line(data=predicted_values_p[predicted_values_p$ISO_script == script,],
-              aes(x=Relative_frequency_l, 
+              aes(x=exp(Relative_frequency_l), 
                   y=pred))+
     theme(text=element_text(family="Arial Unicode MS"))+
     geom_point(alpha=0.5)+
@@ -267,9 +318,9 @@ plot_individ_pred_p <- function(script){
 plot_individ_pred_c <- function(script){
   data %>%
     filter(ISO_script == script) %>%
-    ggplot(aes(x=Relative_frequency_l, y=Compression))+
+    ggplot(aes(x=exp(Relative_frequency_l), y=Compression))+
     geom_line(data=predicted_values_c[predicted_values_c$ISO_script == script,],
-              aes(x=Relative_frequency_l, 
+              aes(x=exp(Relative_frequency_l), 
                   y=pred))+
     theme(text=element_text(family="Arial Unicode MS"))+
     geom_point(alpha=0.5)+
@@ -285,8 +336,9 @@ plot_individ_pred_c <- function(script){
 p_1_ <- plot_individ_pred_p('Guru')+
   theme(text = element_text(size = 11),
         plot.margin = margin(l = 18, b=5, t=5, r=5))+
-  xlab('Frequency (log-transformed)')+
-  ylab('Perimetric complexity')
+  xlab('Frequency (log-scale)')+
+  ylab('Perimetric complexity')+
+  scale_x_log10(labels = scales::comma)
 
 p_2_ <- predicted_values_p %>% 
   ggplot(aes(Relative_frequency_l, pred))+
@@ -313,8 +365,9 @@ c_fig3 <- ggarrange(p_1_, p_2_, heights = c(0.5, 1), ncol = 1, nrow = 2)
 p_1_c <- plot_individ_pred_c('Guru')+
   theme(text = element_text(size = 11),
         plot.margin = margin(l = 18, b=5, t=5, r=5))+
-  xlab('Frequency (log-transformed)')+
-  ylab('Algorithmic complexity')
+  xlab('Frequency (log-scale)')+
+  ylab('Algorithmic complexity')+
+  scale_x_log10(labels = scales::comma)
 p_2_c <- predicted_values_c %>% 
   ggplot(aes(Relative_frequency_l, pred))+
   geom_point(data=data,
