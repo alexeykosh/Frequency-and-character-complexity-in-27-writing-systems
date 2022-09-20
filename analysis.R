@@ -417,11 +417,3 @@ ggsave('figures/fig4_n.pdf',
        width = 10,
        height = 5,
        device = cairo_pdf)
-
-
-
-
-
-
-
-
