@@ -21,6 +21,7 @@ library(viridis)
 # library(tibble)
 # library(simpleboot)
 library(ggridges)
+library(tibble)
 
 
 # Setting the theme for ggplot
@@ -94,7 +95,6 @@ summary(model_full_p)
 ## Confidence intervals
 confint(model_full_p)
 
-
 ## Algorithmic complexity models (full and null)
 model_full_c <- lmer(formula = Compression ~ 1 + Relative_frequency_l +
                        (1 + Relative_frequency_l|ISO_script), data=data)
@@ -139,52 +139,6 @@ if (AIC(model_full_p_f) - AIC(model_null_p_f) > 2){
 confint(model_full_p_f)
 ## Confidencce intervals
 summary(model_full_p)
-
-## Individual regression for each script: algorithmic complexity 
-data %>%
-  nest(data = -ISO_script) %>% 
-  mutate(
-    fit = map(data, ~ lm(Compression ~ Relative_frequency_l, data = .x)),
-    tidied = map(fit, ~broom::tidy(.x, conf.int = TRUE, conf.level = 0.95))
-  ) %>% 
-  unnest(tidied) %>%
-  filter(term == "Relative_frequency_l") %>%
-  mutate(ISO_script = forcats::fct_reorder(ISO_script, desc(estimate))) %>%
-  ggplot(aes(x=estimate, y=ISO_script))+
-  geom_vline(xintercept = 0, 
-             linetype="dashed", 
-             color = "red", 
-             size=1)+
-  geom_point()+
-  geom_pointrange(aes(xmin=conf.low, xmax=conf.high))+
-  xlim(-125, 40)
-
-## Individual regression for each script: perimetric complexity 
-# read.csv('data/betas_p.csv') %>%
-#   mutate(ISO_code = forcats::fct_reorder(ISO_code, desc(beta))) %>%
-#   ggplot(aes(x = beta, y = ISO_code))+ 
-#   geom_density_ridges(rel_min_height = 0.005, 
-#                       quantile_lines = TRUE,
-#                       quantiles = 2)+
-#   geom_vline(xintercept = 0,
-#              linetype="dashed",
-#              color = "red",
-#              size=0.5)+
-#   xlab('β for relative frequency')+
-#   ylab('')
-# 
-# read.csv('data/betas_c.csv') %>%
-#   mutate(ISO_code = forcats::fct_reorder(ISO_code, desc(beta))) %>%
-#   ggplot(aes(x = beta, y = ISO_code))+ 
-#   geom_density_ridges(rel_min_height = 0.005, 
-#                       quantile_lines = TRUE,
-#                       quantiles = 2)+
-#   geom_vline(xintercept = 0,
-#              linetype="dashed",
-#              color = "red",
-#              size=0.5)+
-#   xlab('β for relative frequency')+
-#   ylab('')
 
 # Figure 2
 ## Extracting model confidence interval (perimetric complexity)
@@ -397,3 +351,77 @@ ggsave('figures/fig3.pdf',
        width = 16,
        height = 8,
        device = cairo_pdf)
+
+# Figure 4
+## Initial model
+re_perim <- data.frame(coef(model_full_p)$ISO_script) %>%
+  rownames_to_column(var='ISO_script') %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+  geom_point()+
+  geom_vline(xintercept = 0,
+             linetype="dashed",
+             color = "red",
+             size=0.5)+
+  xlim(-5, 1)+
+  xlab('Random slope values')+
+  ylab('Script name (ISO 15924 code)')
+re_compr <- data.frame(coef(model_full_c)$ISO_script) %>%
+  rownames_to_column(var='ISO_script') %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+  geom_point()+
+  geom_vline(xintercept = 0,
+             linetype="dashed",
+             color = "red",
+             size=0.5)+
+  xlim(-50, 10)+
+  xlab('Random slope values')+
+  ylab('Script name (ISO 15924 code)')
+ggarrange(re_perim, re_compr, ncol=2, nrow=1, labels = c("A", "B"))
+ggsave('figures/fig4.pdf',
+       width = 10,
+       height = 5,
+       device = cairo_pdf)
+## Models with nesting
+### Get coefficients from the nested model
+nested_rs_p <- data.frame(coef(model_full_p_f)$`Family:ISO_script`) %>% 
+  rownames_to_column(var='Family_ISO_script') %>% 
+  tidyr::separate(Family_ISO_script, c("Family","ISO_script"), 
+                  sep = ":")
+nested_rs_c <- data.frame(coef(model_full_c_f)$`Family:ISO_script`) %>% 
+  rownames_to_column(var='Family_ISO_script') %>% 
+  tidyr::separate(Family_ISO_script, c("Family","ISO_script"), 
+                  sep = ":")
+### Plotting
+re_perim_n <- nested_rs_p %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+  geom_point()+
+  geom_vline(xintercept = 0,
+             linetype="dashed",
+             color = "red",
+             size=0.5)+
+  xlim(-5, 1)+
+  xlab('Random slope values')+
+  ylab('Script name (ISO 15924 code)')
+re_compr_n <- nested_rs_c %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+  geom_point()+
+  geom_vline(xintercept = 0,
+             linetype="dashed",
+             color = "red",
+             size=0.5)+
+  xlim(-50, 10)+
+  xlab('Random slope values')+
+  ylab('Script name (ISO 15924 code)')
+ggarrange(re_perim_n, re_compr_n, ncol=2, nrow=1, labels = c("A", "B"))
+ggsave('figures/fig4_n.pdf',
+       width = 10,
+       height = 5,
+       device = cairo_pdf)
+
+
+
+
+
+
+
+
