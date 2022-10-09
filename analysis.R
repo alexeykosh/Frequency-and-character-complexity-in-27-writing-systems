@@ -1,3 +1,4 @@
+library(modelr)
 library(ggplot2)
 library(dplyr)
 library(lme4)
@@ -15,13 +16,9 @@ library(sysfonts)
 library(broom.mixed)
 library(sf)
 library(viridis)
-# library(broom)
-# library(tidyr)
-# library(purrr)
-# library(tibble)
-# library(simpleboot)
 library(ggridges)
 library(tibble)
+library(modelbased)
 
 
 # Setting the theme for ggplot
@@ -29,7 +26,11 @@ theme_set(theme_bw())
 
 
 # Data loading
-data <- read.csv('data/final.csv')
+# !!!
+# data <- read.csv('preprocessing/final_.csv')
+data <- read.csv('data/final_correction.csv')
+nrow(data)
+# !!!
 data <- data[data$ISO_language != 'heb',]
 ## Log-transforming relative frequency
 data$Relative_frequency_l <- log(data$Relative_frequency)
@@ -37,7 +38,7 @@ data$Relative_frequency_l <- log(data$Relative_frequency)
 cor.test(data$Perimetric_complexity, 
          data$Compression, 
          method = "pearson")
-
+  
 ## SI table
 data %>%
   group_by(ISO_script) %>% 
@@ -62,18 +63,16 @@ dist[dist$ISO_language == 'chr',]$lat <- 35.8513
 dist[dist$ISO_language == 'chr',]$lon <- -94.9878
 dist[dist$ISO_language == 'cre',]$lat <- 66.578227
 dist[dist$ISO_language == 'cre',]$lon <- -93.270105
-
 dist %>%
   ggplot(aes(x=lon, y=lat))+
     coord_sf(xlim = c(-100, 120),ylim = c(0, 75), expand = TRUE)+
-    borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", .2))+
+    borders("world", colour=alpha("gray50", .2), fill=alpha("gray50", 0))+
     geom_point(aes(color=Family))+
     geom_text_repel(aes(label=ISO_script))+
     theme_void()+
     theme(legend.position = 'bottom')+
     scale_color_viridis(discrete=TRUE)+
-    theme(text = element_text(size = 10))
-
+    theme(text = element_text(size = 12)) 
 ggsave('figures/fig1.pdf', dpi=300, width = 8, height = 6)
 knitr::plot_crop('figures/fig1.pdf')
 
@@ -85,7 +84,7 @@ model_full_p <- lmer(formula = Perimetric_complexity ~ 1 + Relative_frequency_l
 model_null_p <- lmer(formula =Perimetric_complexity ~ 1 + (1|ISO_script), 
                      data=data)
 ## Comparing the AIC of the full model
-if (AIC(model_full_p) - AIC(model_null_p) > 2){
+if (abs(AIC(model_full_p) - AIC(model_null_p)) > 2){
   'Δ AIC > 2'
 } else {
   'Δ AIC < 2'
@@ -100,7 +99,7 @@ model_full_c <- lmer(formula = Compression ~ 1 + Relative_frequency_l +
                        (1 + Relative_frequency_l|ISO_script), data=data)
 model_null_c <- lmer(formula =Compression ~ 1 + (1|ISO_script), data=data)
 ## AIC comparison 
-if (AIC(model_full_c) - AIC(model_null_c) > 2){
+if (abs(AIC(model_full_c) - AIC(model_null_c)) > 2){
   'Δ AIC > 2'
 } else {
   'Δ AIC < 2'
@@ -115,7 +114,7 @@ confint(model_full_c)
 model_null_c_f <- lmer(formula =Compression ~ 1 + (1|Family:ISO_script), data=data)
 model_full_c_f <- lmer(formula = Compression ~ 1 + Relative_frequency_l + (1 + Relative_frequency_l|Family:ISO_script), data=data)
 ## AIC comparison
-if (AIC(model_full_c_f) - AIC(model_null_c_f) > 2){
+if (abs(AIC(model_full_c_f) - AIC(model_null_c_f)) > 2){
   'Δ AIC > 2'
 } else {
   'Δ AIC < 2'
@@ -130,7 +129,7 @@ confint(model_full_c_f)
 model_null_p_f <- lmer(formula =Perimetric_complexity ~ 1 + (1|Family: ISO_script), data=data)
 model_full_p_f <- lmer(formula = Perimetric_complexity ~ 1 + Relative_frequency_l + (1 + Relative_frequency_l|Family:ISO_script), data=data)
 ## AIC comparison
-if (AIC(model_full_p_f) - AIC(model_null_p_f) > 2){
+if (abs(AIC(model_full_p_f) - AIC(model_null_p_f)) > 2){
   'Δ AIC > 2'
 } else {
   'Δ AIC < 2'
@@ -190,7 +189,7 @@ p1 <- ggplot()+
   scale_x_continuous(breaks = seq(-15, 0,
                                   by = 3))+
   xlab('Frequency (log-transformed)')+
-  ylab('Perimetric complexity')+                        
+  ylab('Perimetric complexity')+   
   theme(text = element_text(size = 20))     
 ## Extracting model confidence interval (algorithmic complexity)
 p_sim <- data.frame(Relative_frequency_l= seq(min(data$Relative_frequency_l),
@@ -288,7 +287,8 @@ plot_individ_pred_c <- function(script){
 }
 ## Panel A
 p_1_ <- plot_individ_pred_p('Guru')+
-  theme(text = element_text(size = 11),
+  theme(text = element_text(size = 14),
+        axis.text = element_text(size=14),
         plot.margin = margin(l = 18, b=5, t=5, r=5))+
   xlab('Frequency (log-scale)')+
   ylab('Perimetric complexity')+
@@ -299,7 +299,7 @@ p_2_ <- predicted_values_p %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Perimetric_complexity, 
-                 color=ISO_script), alpha=0.7)+
+                 color=Family), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
@@ -317,7 +317,8 @@ p_2_ <- predicted_values_p %>%
 c_fig3 <- ggarrange(p_1_, p_2_, heights = c(0.5, 1), ncol = 1, nrow = 2)
 ## Panel B
 p_1_c <- plot_individ_pred_c('Guru')+
-  theme(text = element_text(size = 11),
+  theme(text = element_text(size = 14), 
+        axis.text = element_text(size=14),
         plot.margin = margin(l = 18, b=5, t=5, r=5))+
   xlab('Frequency (log-scale)')+
   ylab('Algorithmic complexity')+
@@ -327,7 +328,7 @@ p_2_c <- predicted_values_c %>%
   geom_point(data=data,
              aes(x=Relative_frequency_l, 
                  y=Compression, 
-                 color=ISO_script), alpha=0.7)+
+                 color=Family), alpha=0.7)+
   geom_line()+
   theme(legend.position = "none")+
   theme(axis.title.x=element_blank(),
@@ -417,3 +418,26 @@ ggsave('figures/fig4_n.pdf',
        width = 10,
        height = 5,
        device = cairo_pdf)
+
+## model-based individual-level predictions
+### https://easystats.github.io/modelbased/articles/estimate_grouplevel.html
+# group_level <- function(model){
+#   random <- estimate_grouplevel(model, group='Relative_frequency_l')
+#   random[random$Parameter == 'Relative_frequency_l',] %>%
+#     arrange(Coefficient) %>%    
+#     mutate(name=factor(Level, levels=Level)) %>%
+#     ggplot(aes(y=Level, x=Coefficient))+
+#     geom_point()+
+#     geom_pointrange(aes(xmin=CI_low, xmax=CI_high))+
+#     geom_vline(xintercept = 0,
+#                linetype="dashed",
+#                color = "red",
+#                size=0.5)+
+#     # xlim(-5, 5)+
+#     xlab('Random slope values (z-score)')+
+#     ylab('Script name (ISO 15924 code)')
+# }
+# 
+# group_level(model = model_full_c)
+# 
+# group_level(model = model_full_p)
