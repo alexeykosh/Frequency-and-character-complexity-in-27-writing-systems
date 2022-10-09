@@ -1,4 +1,4 @@
-# Frequency and character complexity in 27 writing systems
+# Zipf's Law of Abbreviation holds for individual letters across a broad range of writing systems
 
 [![DOI](https://zenodo.org/badge/523754010.svg)](https://zenodo.org/badge/latestdoi/523754010)
 
