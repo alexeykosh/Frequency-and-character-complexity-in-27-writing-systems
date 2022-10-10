@@ -38,6 +38,8 @@ data$Relative_frequency_l <- log(data$Relative_frequency)
 cor.test(data$Perimetric_complexity, 
          data$Compression, 
          method = "pearson")
+
+nrow(data)
   
 ## SI table
 data %>%
@@ -84,6 +86,7 @@ model_full_p <- lmer(formula = Perimetric_complexity ~ 1 + Relative_frequency_l
 model_null_p <- lmer(formula =Perimetric_complexity ~ 1 + (1|ISO_script), 
                      data=data)
 ## Comparing the AIC of the full model
+abs(AIC(model_full_p) - AIC(model_null_p))
 if (abs(AIC(model_full_p) - AIC(model_null_p)) > 2){
   'Δ AIC > 2'
 } else {
@@ -99,6 +102,7 @@ model_full_c <- lmer(formula = Compression ~ 1 + Relative_frequency_l +
                        (1 + Relative_frequency_l|ISO_script), data=data)
 model_null_c <- lmer(formula =Compression ~ 1 + (1|ISO_script), data=data)
 ## AIC comparison 
+abs(AIC(model_full_c) - AIC(model_null_c))
 if (abs(AIC(model_full_c) - AIC(model_null_c)) > 2){
   'Δ AIC > 2'
 } else {
@@ -114,6 +118,7 @@ confint(model_full_c)
 model_null_c_f <- lmer(formula =Compression ~ 1 + (1|Family:ISO_script), data=data)
 model_full_c_f <- lmer(formula = Compression ~ 1 + Relative_frequency_l + (1 + Relative_frequency_l|Family:ISO_script), data=data)
 ## AIC comparison
+abs(AIC(model_full_c_f) - AIC(model_null_c_f))
 if (abs(AIC(model_full_c_f) - AIC(model_null_c_f)) > 2){
   'Δ AIC > 2'
 } else {
@@ -355,9 +360,11 @@ ggsave('figures/fig3.pdf',
 
 # Figure 4
 ## Initial model
-re_perim <- data.frame(coef(model_full_p)$ISO_script) %>%
-  rownames_to_column(var='ISO_script') %>%
-  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+### Perimetric complexity
+res_perim <- data.frame(coef(model_full_p)$ISO_script) %>%
+  rownames_to_column(var='ISO_script')
+re_perim <- merge(unique(data[,c('Family', 'ISO_script')]), res_perim, by='ISO_script') %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l, color=Family))+
   geom_point()+
   geom_vline(xintercept = 0,
              linetype="dashed",
@@ -365,10 +372,16 @@ re_perim <- data.frame(coef(model_full_p)$ISO_script) %>%
              size=0.5)+
   xlim(-5, 1)+
   xlab('Random slope values')+
-  ylab('Script name (ISO 15924 code)')
-re_compr <- data.frame(coef(model_full_c)$ISO_script) %>%
-  rownames_to_column(var='ISO_script') %>%
-  ggplot(aes(y=ISO_script, x=Relative_frequency_l))+
+  ylab('Script name (ISO 15924 code)')+
+  theme(legend.position="none",
+        strip.background=element_rect(colour="black",
+                                      fill=NA))+
+  scale_color_viridis(discrete=TRUE)
+### Algorithmic complexity
+res_compr <- data.frame(coef(model_full_c)$ISO_script) %>%
+  rownames_to_column(var='ISO_script')
+re_compr <- merge(unique(data[,c('Family', 'ISO_script')]), res_compr, by='ISO_script') %>%
+  ggplot(aes(y=ISO_script, x=Relative_frequency_l, color=Family))+
   geom_point()+
   geom_vline(xintercept = 0,
              linetype="dashed",
@@ -376,12 +389,15 @@ re_compr <- data.frame(coef(model_full_c)$ISO_script) %>%
              size=0.5)+
   xlim(-50, 10)+
   xlab('Random slope values')+
-  ylab('Script name (ISO 15924 code)')
+  ylab('Script name (ISO 15924 code)')+
+  theme(legend.position="none",
+        strip.background=element_rect(colour="black",
+                                      fill=NA))+
+  scale_color_viridis(discrete=TRUE)
 ggarrange(re_perim, re_compr, ncol=2, nrow=1, labels = c("A", "B"))
 ggsave('figures/fig4.pdf',
        width = 10,
-       height = 5,
-       device = cairo_pdf)
+       height = 5)
 ## Models with nesting
 ### Get coefficients from the nested model
 nested_rs_p <- data.frame(coef(model_full_p_f)$`Family:ISO_script`) %>% 
@@ -418,26 +434,3 @@ ggsave('figures/fig4_n.pdf',
        width = 10,
        height = 5,
        device = cairo_pdf)
-
-## model-based individual-level predictions
-### https://easystats.github.io/modelbased/articles/estimate_grouplevel.html
-# group_level <- function(model){
-#   random <- estimate_grouplevel(model, group='Relative_frequency_l')
-#   random[random$Parameter == 'Relative_frequency_l',] %>%
-#     arrange(Coefficient) %>%    
-#     mutate(name=factor(Level, levels=Level)) %>%
-#     ggplot(aes(y=Level, x=Coefficient))+
-#     geom_point()+
-#     geom_pointrange(aes(xmin=CI_low, xmax=CI_high))+
-#     geom_vline(xintercept = 0,
-#                linetype="dashed",
-#                color = "red",
-#                size=0.5)+
-#     # xlim(-5, 5)+
-#     xlab('Random slope values (z-score)')+
-#     ylab('Script name (ISO 15924 code)')
-# }
-# 
-# group_level(model = model_full_c)
-# 
-# group_level(model = model_full_p)
