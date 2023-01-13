@@ -24,21 +24,26 @@ def permute_spearman(data, complexity_measure: str, n_rep=5000):
     '''
     spearman = defaultdict(list)
     ac = defaultdict(list)
+    p_vals = []
     
-    for script in tqdm(data['ISO_script'].unique(),
-                desc='Running the simulation', 
-                position=0, 
-                leave=True):
+    for script in data['ISO_script'].unique():
         sp = []
         freq = data[data['ISO_script'] == script]['Relative_frequency']
-        ac[script] = [st.spearmanr(freq, data[data['ISO_script'] == script][complexity_measure])[0]]
+        actual_value = st.spearmanr(freq, data[data['ISO_script'] == script][complexity_measure])[0]
+        ac[script] = [actual_value]
+        # compute the spearman correlation between frequency and complexity
+
+        p = 0
         for _ in range(n_rep):
             sample = data[data['ISO_script'] == script][complexity_measure].sample(n=data[data['ISO_script']
                                                                                           == script].shape[0],
                                                                                    replace=True)
             random_correlation = st.spearmanr(freq, sample)[0]
+            if random_correlation > actual_value:
+                p += 1
             sp.append(random_correlation)
         spearman[script] = sp
+        p_vals.append(round(1 - p/n_rep, 3))
     
     df = pd.DataFrame.from_dict(spearman)
     df = pd.melt(df, var_name=None)
@@ -47,6 +52,7 @@ def permute_spearman(data, complexity_measure: str, n_rep=5000):
     ac = pd.DataFrame.from_dict(ac)
     ac = pd.melt(ac, var_name=None)
     ac.columns = ['ISO_code', 'actual_correlation']
+    ac['p_value'] = p_vals
 
     return df, ac
 
